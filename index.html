@@ -90,7 +90,7 @@
 								<div id="messages_end">&nbsp;</div>
 							</div>
 							<div class="Input Input-blank">
-								<textarea autofocus ng-model="input_message_text" ng-keydown="$event.keyCode === 13 && sendMessage() && onKeydown($event)" class="Input_field" placeholder="Send a message..." style="height: 20px;" id='inputfield'></textarea>
+								<textarea  autofocus ng-model="input_message_text" ng-keydown="$event.keyCode === 13 && sendMessage() && onKeydown($event)" class="Input_field" placeholder="Send a message..." style="height: 20px;resize: none; overflow: hidden;" id='inputfield'></textarea>
 
 
 								<button class="Input_button Input_button-emoji">
@@ -302,6 +302,9 @@
 			$(".chat_on").click(function(){
 				$(".Layout").toggle();
 				$(".chat_on").hide(300);
+				var objDiv = document.getElementById("scrollMessage");
+				MesiboLog("Scroll to last", objDiv, objDiv.scrollTop);
+				objDiv.scrollTop = objDiv.scrollHeight;
 			});
 
 			$(".chat_close").click(function(){

@@ -700,11 +700,30 @@ angular.module('MesiboWeb', [])
 			$scope.refresh();
 		}
 
+		$scope.updateReadPrevious = function(index){
+			MesiboLog("updateReadPrevious");
+			for (var i = index; i >= 0; i--) {
+				if($scope.mesibo_user_messages[i].status == MESIBO_MSGSTATUS_DELIVERED)
+					$scope.mesibo_user_messages[i].status = MESIBO_MSGSTATUS_READ;
+				else
+					return;
+			}
+		}
+
 		$scope.Mesibo_OnMessageStatus = function(m){
 			MesiboLog("$scope.Mesibo_OnMessageStatus", m);
 			for (var i = $scope.mesibo_user_messages.length - 1; i >= 0; i--) {
-				if($scope.mesibo_user_messages[i].id == m.id)
+				if($scope.mesibo_user_messages[i].id == m.id){
 					$scope.mesibo_user_messages[i].status = m.status;
+					
+					if(m.status == MESIBO_MSGSTATUS_READ && i 
+						&& $scope.mesibo_user_messages[i-1].status
+						 == MESIBO_MSGSTATUS_DELIVERED){ //Make all previous delivered msgs to read
+						$scope.updateReadPrevious(i - 1);
+					}
+
+					break;
+				}
 			}
 			$scope.refresh();
 		}
@@ -804,7 +823,7 @@ angular.module('MesiboWeb', [])
 		$scope.update_read_messages = function(m, rid){
 			$scope.mesibo_user_messages = m;
 			$scope.$applyAsync(function()  {
-				$scope.scrollToLastMsg();
+				$scope.scrollToLastMsg();				
 			});
 			MesiboLog("scope.update_read_messages", $scope.mesibo_user_messages);
 		}
