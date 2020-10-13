@@ -425,7 +425,8 @@ angular.module('MesiboWeb', [])
 			}
 
 			$scope.refresh();
-
+			updateScroll();
+			
 			return 0;
 		};
 

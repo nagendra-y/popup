@@ -302,9 +302,7 @@
 			$(".chat_on").click(function(){
 				$(".Layout").toggle();
 				$(".chat_on").hide(300);
-				var objDiv = document.getElementById("scrollMessage");
-				MesiboLog("Scroll to last", objDiv, objDiv.scrollTop);
-				objDiv.scrollTop = objDiv.scrollHeight;
+				updateScroll();
 			});
 
 			$(".chat_close").click(function(){

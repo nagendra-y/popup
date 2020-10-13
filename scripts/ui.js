@@ -159,5 +159,10 @@ let getSampleLinkPreview = () =>{
     return linkPreview;
 }
 
+let updateScroll = () =>{
+    var objDiv = document.getElementById("scrollMessage");
+    MesiboLog("Scroll to last", objDiv, objDiv.scrollTop);
+    objDiv.scrollTop = objDiv.scrollHeight;
+}
 
 
