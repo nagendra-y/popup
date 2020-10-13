@@ -142,7 +142,7 @@
 	max-width: 60%;
 
 	background: #ebebeb none repeat scroll 0 0;
-	border-radius: 12px 12px 12px 0;
+	border-radius: 7px 7px 7px 7px;
 	color: #646464;
 	font-size: 14px;
 	margin: 0;
@@ -195,7 +195,7 @@
 	max-width: 60%;
 	background:#dcf8c6;
 	/*display: block;*/
-	border-radius: 12px 12px 0 12px;
+	border-radius: 7px 7px 7px 7px;
 	font-size: 14px;
 	margin: 0;
 	padding: 5px 10px 5px 12px;

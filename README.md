@@ -116,4 +116,3 @@ No the first time you login with your phone number with a valid OTP the token wi
 ### Getting $scope.mesibo.X is not a function
 Ensure that you perform a hard reload so that you have the latest Mesibo Javascript API
 
-# popup

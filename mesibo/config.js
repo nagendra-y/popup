@@ -49,8 +49,8 @@
  * In that case, no need to configure token here
  * 
  */
-var MESIBO_ACCESS_TOKEN = "6af9f3c623f389793338cc56ce6aa27dea8c2a4b7576e33162571";
-// var MESIBO_ACCESS_TOKEN = "4458f7207a6333595b0825d7abd266a65a1ab6721911e11161562";
+// var MESIBO_ACCESS_TOKEN = "6af9f3c623f389793338cc56ce6aa27dea8c2a4b7576e33162571";
+var MESIBO_ACCESS_TOKEN = "fb7cb94614f89cb5d50e18935cb1339d391abf3e5ca4eecc16266d";
 /* App ID used to create a user token. */
 var MESIBO_APP_ID = "web";
 // var MESIBO_ACCESS_TOKEN = "";

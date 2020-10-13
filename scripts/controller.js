@@ -152,9 +152,6 @@ angular.module('MesiboWeb', [])
 			$scope.refresh()
 		}
 
-		$scope.onKeydown = function(event) {
-			console.log(event);
-		}
 
 		$scope.isGroup = function(user) {
 			return isGroup(user);
@@ -432,6 +429,26 @@ angular.module('MesiboWeb', [])
 			return 0;
 		};
 
+		function getCurrentDate(){
+			let d = {};
+			const date = new Date();
+		 	let h = date.getHours() + "";
+			let m = date.getMinutes() + "";
+			if(h.length < 2)
+				h = "0" + h;
+			if(m.length < 2)
+				m = "0" + m;
+			d.time = h + ":" + m;
+			d.yd = "Today";
+
+			return d;
+		}
+		
+		$scope.onKeydown = function(event){
+			MesiboLog("onKeydown". event);
+			event.preventDefault();
+		}
+		
 		//Send text message to peer(selected user) by reading text from input area
 		$scope.sendMessage = function() {
 			MesiboLog('sendMessage');
@@ -465,10 +482,13 @@ angular.module('MesiboWeb', [])
 				$scope.mesibo.sendMessage(messageParams, messageParams.id, messageParams.message);
 			}
 			// MesiboLog(messageParams, messageParams.id, messageParams.message);
-
+			
+			messageParams.date = getCurrentDate();
+			
 			$scope.mesibo_user_messages.push(messageParams);
 
-			$scope.input_message_text = "";
+			$scope.input_message_text = ''; 
+
 			$scope.refresh();
 			$scope.scrollToLastMsg();
 			return 0;
@@ -783,10 +803,10 @@ angular.module('MesiboWeb', [])
 		
 		$scope.update_read_messages = function(m, rid){
 			$scope.mesibo_user_messages = m;
-			$scope.refresh();
-
-			$scope.scrollToLastMsg();
-			// MesiboLog("scope.messageSession", $scope.mesibo_user_messages);
+			$scope.$applyAsync(function()  {
+				$scope.scrollToLastMsg();
+			});
+			MesiboLog("scope.update_read_messages", $scope.mesibo_user_messages);
 		}
 
 		$scope.initMesibo = function(demo_app_name){			

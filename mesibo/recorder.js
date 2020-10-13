@@ -221,8 +221,12 @@ MesiboRecorder.prototype.initPictureRecording = function(){
       buttonContainer.style.textAlign = 'center';
       cancelButton.textContent = 'Cancel';
       cancelButton.className = 'cancel btn btn-danger';
+      cancelButton.style.marginTop = '5px';
+      cancelButton.style.marginLeft = '5px';
+
       sendButton.textContent = 'Send';
-      sendButton.className = 'send btn btn-success ml-1';
+      sendButton.className = 'send btn btn-success';
+      sendButton.style.marginTop = '5px';
       
       buttonContainer.appendChild(sendButton);
       buttonContainer.appendChild(cancelButton);
@@ -328,6 +332,7 @@ MesiboRecorder.prototype.initAudioRecording = function(){
       audio.setAttribute('controls', '');
       cancelButton.textContent = 'Cancel';
       cancelButton.className = 'cancel btn btn-danger';
+      cancelButton.style.marginLeft = '5px';
       sendButton.textContent = 'Send';
       sendButton.className = 'send btn btn-success ml-1';
 
@@ -343,8 +348,8 @@ MesiboRecorder.prototype.initAudioRecording = function(){
 
       clipContainer.appendChild(audio);
       clipContainer.appendChild(clipLabel);
-      clipContainer.appendChild(cancelButton);
       clipContainer.appendChild(sendButton);
+      clipContainer.appendChild(cancelButton);      
 
       while (rCtx.soundClips.lastElementChild) {
         rCtx.soundClips.removeChild(rCtx.soundClips.lastElementChild);
