@@ -51,6 +51,7 @@ angular.module('MesiboWeb', [])
 		$scope.scrollToLastMsg = function() {
 			$scope.$$postDigest(function () {
 				$anchorScroll("messages_end");
+				updateScroll();
 			});
 		}
 
@@ -425,8 +426,8 @@ angular.module('MesiboWeb', [])
 			}
 
 			$scope.refresh();
-			updateScroll();
-			
+			$scope.scrollToLastMsg();			
+
 			return 0;
 		};
 
