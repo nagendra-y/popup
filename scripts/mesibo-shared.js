@@ -11,21 +11,6 @@ var mesibo_last_status = -1;
 
 console.log("........SHARED WORKER EXEC.........", new Date());
 
-self.addEventListener('activate', function(event) {
-  event.waitUntil(
-    caches.keys().then(function(cacheNames) {
-      return Promise.all(
-        cacheNames.filter(function(cacheName) {
-          // Return true if you want to remove this cache,
-          // but remember that caches are shared across
-          // the whole origin
-        }).map(function(cacheName) {
-          return caches.delete(cacheName);
-        })
-      );
-    })
-  );
-});
 
 onconnect = function(event) {
 	var port = event.ports[0];
@@ -97,8 +82,7 @@ message_handler = function (event, port) {
 		return;
 	}
 
-	if(op == "start"){
-		// TBD, when active_port disconnects, we need to switch to other
+	if(op == "start"){		
 		send_mesibo_init(port);
 	}
 
@@ -111,10 +95,10 @@ message_handler = function (event, port) {
 	}
 
 	if(op == "sendMessage") {
-		// send it to acticve port to send message 
+		// send it to active port to send message 
 		send_to_port(active_port, null, data);
 
-		//TBD. inform all the tabs about new message
+		// Inform all the tabs about new message
 		var p = {};
 		p.m = data.params;
 		p.data = new TextEncoder().encode(data.message);

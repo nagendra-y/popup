@@ -273,28 +273,30 @@ angular.module('MesiboWeb', [])
 		$scope.inputTextChanged = async function(){
 			MesiboLog('inputTextChanged');
 			//if enabled config isLinkPreview
-			if(isLinkPreview){
-				//xx Bug xx: If link_preview is already present doesn't update
-				if(isValid($scope.link_preview) && isValidString($scope.link_preview.url)){
-					var newUrl = getUrlInText($scope.input_message_text);
-					if(newUrl == $scope.link_preview.url)
-						return; //Make no changes to existing preview
-				}
-
-				var urlInMessage = getUrlInText($scope.input_message_text);
-				if(isValidString(urlInMessage)){
-					MesiboLog("Fetching preview for", urlInMessage)
-					var lp = await $scope.file.getLinkPreviewJson(urlInMessage, LINK_PREVIEW_SERVICE, LINK_PREVIEW_KEY);
-					// var lp = getSampleLinkPreview(); /*For testing */
-					if(isValid(lp)){
-						MesiboLog(lp);
-						$scope.setLinkPreview(lp);
-						$scope.refresh();
-					}
-				}
-				else
-					$scope.link_preview = null;
+			if(!isLinkPreview){
+				return;
 			}
+			//xx Bug xx: If link_preview is already present, it doesn't update
+			if(isValid($scope.link_preview) && isValidString($scope.link_preview.url)){
+				var newUrl = getUrlInText($scope.input_message_text);
+				if(newUrl == $scope.link_preview.url)
+					return; //Make no changes to existing preview
+			}
+
+			var urlInMessage = getUrlInText($scope.input_message_text);
+			if(isValidString(urlInMessage)){
+				MesiboLog("Fetching preview for", urlInMessage)
+				var lp = await $scope.file.getLinkPreviewJson(urlInMessage, LINK_PREVIEW_SERVICE, LINK_PREVIEW_KEY);
+				// var lp = getSampleLinkPreview(); /*For testing */
+				if(isValid(lp)){
+					MesiboLog(lp);
+					$scope.setLinkPreview(lp);
+					$scope.refresh();
+				}
+			}
+			else
+				$scope.link_preview = null;
+			
 		}
 
 
@@ -842,7 +844,9 @@ angular.module('MesiboWeb', [])
 		}
 
 		$scope.initMesibo = function(demo_app_name){			
+			// Instead of directly accessing Mesibo APIs like so,
 			// $scope.mesibo = new Mesibo();
+			// use a wrapper API that uses a shared worker  			
 			$scope.mesibo = new MesiboWorker($scope);
 			$scope.mesiboNotify = $scope;
 
