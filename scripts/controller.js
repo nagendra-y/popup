@@ -7,19 +7,19 @@ const MAX_MESSAGES_READ = 100;
 angular.module('MesiboWeb', [])
 	.controller('AppController', ['$scope', '$window', '$anchorScroll', function ($scope, $window, $anchorScroll) {
 
-		$scope.summarySession = {};
-		$scope.messageSession = {};
+		$scope.summarySession = null;
+		$scope.messageSession = null;
 		$scope.mesibo_user_messages = [];
 
 		$scope.existing_app_session = null;
 		$scope.message_channel = null;
 
 		$scope.available_users =  [];
-		$scope.selected_user = {};
+		$scope.selected_user = null;
 		$scope.selected_user_count = 0; 
 		$scope.self_user = {};
 
-		$scope.mesibo = {}; 
+		$scope.mesibo = null; 
 
 		//Main UI
 		$scope.profile_settings_show = false;
@@ -315,9 +315,7 @@ angular.module('MesiboWeb', [])
 			return status_color;
 		}
 
-		$scope.logout = function(){
-			$scope.mesibo.stop();
-			deleteTokenInStorage(); 
+		$scope.logout = function(){			 
 			$('#logoutModal').modal("show");
 		}
 
@@ -357,7 +355,9 @@ angular.module('MesiboWeb', [])
 			var peer = user.address;
 			var groupid = user.groupid;
 
-			MesiboLog("readMessages "+ peer+ " "+" groupid "+ groupid+ " "+ count);		
+			MesiboLog("readMessages "+ peer+ " "+" groupid "+ groupid+ " "+ count);	
+
+			$scope.messageSession = null;	
 			
 			$scope.messageSession =  this.mesibo.readDbSession(peer, groupid, null, 
 				function on_messages(m) {
@@ -809,20 +809,31 @@ angular.module('MesiboWeb', [])
 		}
 
 		$scope.init_popup = function(){ 
-			MesiboLog("init_popup called"); 		
-			$scope.selected_user.name = POPUP_DISPLAY_NAME; 
-			$scope.selected_user.picture = POPUP_DISPLAY_PICTURE; 
-			$scope.selected_user.address = POPUP_DESTINATION_USER; 
-			$scope.selected_user.groupid = 0; 
-			$scope.selected_user.activity = ""; 
+			MesiboLog("init_popup called");
+			let user = {}; 		
+			user.name = POPUP_DISPLAY_NAME; 
+			user.picture = POPUP_DISPLAY_PICTURE; 
+			user.address = POPUP_DESTINATION_USER; 
+			user.groupid = 0; 
+			user.activity = ""; 
+			
+			$scope.selected_user = user;
 			$scope.refresh(); 
 
 			$scope.call = new MesiboCall($scope);
 			$scope.file = new MesiboFile($scope);
-			$scope.sessionReadMessages($scope.selected_user, 1000); 			
+			$scope.readMessages();			
+		}
+
+		$scope.readMessages = function(){
+			if($scope.messageSession)
+				$scope.messageSession.read(1000);
+			else
+				$scope.sessionReadMessages($scope.selected_user, 1000); 
 		} 
 		
 		$scope.update_read_messages = function(m, rid){
+			$scope.mesibo_user_messages = [];
 			$scope.mesibo_user_messages = m;
 			$scope.$applyAsync(function()  {
 				$scope.scrollToLastMsg();				

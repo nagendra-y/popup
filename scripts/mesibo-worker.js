@@ -118,7 +118,8 @@ MesiboWorker.prototype._mesibo_shared_process = function(o) {
 					wCtx.port.postMessage( 
 						{op:'readMessagesResult', data: o, messages:mSession.getMessages(), rid:o.rid});
 			});
-			mSession.enableReadReceipt(o.read_receipt);
+			if(o.read_receipt)
+				mSession.enableReadReceipt(true);
 			mSession.read(o.count);  //pass count								
 			break;
 		
@@ -209,7 +210,10 @@ MesiboWorker.prototype._mesibo_init = function(){
 
 		this.mesibo_api.setListener(this.mesibo_notify);
 					
-		this.mesibo_api.start();		 
+		this.mesibo_api.start();
+
+		// Read messages when a non-active tab becomes active
+		this.scope.readMessages();		 
 	}
 	catch(e){
 		console.log("Exception starting mesibo: ", e);
