@@ -1,7 +1,7 @@
 #Demo 
 https://nagendra-y.github.io/popup/index.html
 
-## Multi-tab Popup
+## Multi-Tab Chat Popup
 This repository contains the source code for a multi-tab, Mesibo Messenger Popup app using Mesibo Javascript API.
 
 **For the single-tab version refer https://github.com/mesibo/messenger-javascript**
