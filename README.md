@@ -56,6 +56,7 @@ onconnect = function(event) {
 ```
 When you call `MesiboWorker.start`, a `start` message is sent to the shared worker
 ```javascript
+//mesibo-worker.js
 MesiboWorker.prototype.start = function(){
 	var post = {op: "start"};
 	this.mesibo_worker.port.postMessage(post);
@@ -63,6 +64,7 @@ MesiboWorker.prototype.start = function(){
 ```
 On the shared worker end, we will then initialize mesibo
 ```javascript
+//mesibo-shared.js
 if(op == "start"){		
 		send_mesibo_init(port);
 	}
