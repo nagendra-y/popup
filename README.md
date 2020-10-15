@@ -35,7 +35,7 @@ With a shared worker you still have a single connection to mesibo. Instead of ea
 
 ![](images/shared-worker/shared-worker.png)
 
-Everytime you open `index.html` in a tab, a `MesiboWorker` object will be created(See `initMesibo` in `controller.js`) which in turn creates a `SharedWorker` object(which executes `mesibo-shared.js`). At each tab, you can call Mesibo API functions and callbacks, which will be handled by the `MesiboWorker` by sending appropriate messages to the shared worker.
+Everytime you open `index.html` in a tab, a `MesiboWorker` object will be created(See `initMesibo()` in `controller.js`) which in turn creates a `SharedWorker` object(which executes `mesibo-shared.js`). At each tab, you can call Mesibo API functions and callbacks, which will be handled by the `MesiboWorker` by sending appropriate messages to the shared worker.
 
 ## Connecting to the shared worker
 
