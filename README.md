@@ -1,7 +1,4 @@
-#Demo 
-https://nagendra-y.github.io/popup/index.html
-
-## Multi-tab Popup
+## Multi-Tab Chat Popup
 This repository contains the source code for a multi-tab, Mesibo Messenger Popup app using Mesibo Javascript API.
 
 **For the single-tab version refer https://github.com/mesibo/messenger-javascript**
@@ -9,8 +6,8 @@ This repository contains the source code for a multi-tab, Mesibo Messenger Popup
 This multi-tab popup has the same features as of the single-tab version with one added feature — the chat popup can be opened and viewed in multiple tabs. This is done by using a [Shared Worker](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker). 
 
 ## Features:
-- Multi tab support
-- One-to-One messaging, Voice and Video Call
+- Multi-tab support
+- One-to-One Messaging, Voice and Video Call
 - Group Messaging
 - Read receipts
 - Send Files
@@ -21,12 +18,12 @@ This multi-tab popup has the same features as of the single-tab version with one
 
 
 ## Multi-tab Sessions 
-In case of the singe-tab version, if you are connected to mesibo on one tab and try to connect on another tab, using the same credentials (token and app id) you will be **logged out** from the first tab. This is because, for a mesibo user there can only be one active session logged in.
+In the case of the singe-tab version, if you are connected to mesibo on one tab and try to connect on another tab, using the same credentials (token and app id) you will be **logged out** from the first tab. This is because for a mesibo user there can only be one active session logged in.
 
 So, if you want to open up multiple chat sessions, for the same user, across multiple tabs this approach is not feasible. To solve this you can use a [Shared Worker](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker).  
 
 ## Using a Shared Worker
-With a shared worker you still have a single connection to mesibo. Instead of each tab connecting to mesibo individually, the shared worker is the only one handling the connection to mesibo. Incoming & outgoing messages, calls, etc will be handled by the shared worker across all connected tabs which communicate with each other through the shared worker using message events.
+With a shared worker, you still have a single connection to mesibo. Instead of each tab connecting to mesibo individually, the shared worker is the only one handling the connection to mesibo. Incoming & outgoing messages, calls, etc will be handled by the shared worker across all connected tabs which communicate with each other through the shared worker using message events.
 
 - `scripts/mesibo-shared.js` is the **shared worker script**. 
 
@@ -35,7 +32,7 @@ With a shared worker you still have a single connection to mesibo. Instead of ea
 
 ![](images/shared-worker/shared-worker.png)
 
-Everytime you open `index.html` in a tab, a `MesiboWorker` object will be created(See `initMesibo` in `controller.js`) which in turn creates a `SharedWorker` object(which executes `mesibo-shared.js`). At each tab, you can call Mesibo API functions and callbacks, which will be handled by the `MesiboWorker` by sending appropriate messages to the shared worker.
+Every time you open `index.html` in a tab, a `MesiboWorker` object will be created(See `initMesibo()` in `controller.js`) which in turn creates a `SharedWorker` object(which executes `mesibo-shared.js`). At each tab, you can call Mesibo API functions and callbacks, which will be handled by the `MesiboWorker` by sending appropriate messages to the shared worker.
 
 ## Connecting to the shared worker
 
@@ -56,6 +53,7 @@ onconnect = function(event) {
 ```
 When you call `MesiboWorker.start`, a `start` message is sent to the shared worker
 ```javascript
+//mesibo-worker.js
 MesiboWorker.prototype.start = function(){
 	var post = {op: "start"};
 	this.mesibo_worker.port.postMessage(post);
@@ -63,6 +61,7 @@ MesiboWorker.prototype.start = function(){
 ```
 On the shared worker end, we will then initialize mesibo
 ```javascript
+//mesibo-shared.js
 if(op == "start"){		
 		send_mesibo_init(port);
 	}
@@ -77,7 +76,7 @@ send_mesibo_init = function(port) {
 	}
 }
 ``` 
-We will only initialize and connect to mesibo once — when a tab connects for the first time. After that, the tab connect via that port is set to be **active**. This active mesibo port is used to connect to mesibo, send messages, make calls etc directly through Mesibo APIs.
+We will only initialize and connect to mesibo once — when a tab connects for the first time. After that, the tab that connected via that port is set to be **active**. This active mesibo port is used to connect to mesibo, send messages, make calls, etc directly through Mesibo APIs.
 
 ### Sending Messages
 For example, to send a message you call the `sendMessage` function and a message is posted to the shared worker for a `sendMessage` operation.
@@ -89,7 +88,7 @@ MesiboWorker.prototype.sendMessage = function(p, id, m){
 }
 ```
 
-The shared worker receives this message and forawrds the message parameters to the active port. Also, all the other connected tabs will be notified of the message sent through a `Mesibo_OnMessage` callback.
+The shared worker receives this message and forwards the message parameters to the active port. Also, all the other connected tabs will be notified of the message sent through a `Mesibo_OnMessage` callback.
 
 ```javascript
 //mesibo-shared.js
@@ -120,7 +119,7 @@ case "sendMessage":
 ```
 
 ### Receiving Messages
-Similar to sending messages being handled by the active port, only the active port will recieve the messages from Mesibo through the `Mesibo_OnMessage` callback. It is the duty of the active port to forward this to all other connected port. The active port connected to mesibo, forwards all such data(like `Mesibo_OnConnectionStatus`, `Mesibo_OnMessageStatus`, etc) received through callbacks.
+Similar to sending messages being handled by the active port, only the active port will receive the messages from Mesibo through the `Mesibo_OnMessage` callback. The active port must forward this to all other connected ports. The active port connected to mesibo, forwards all such data(like `Mesibo_OnConnectionStatus`, `Mesibo_OnMessageStatus`, etc) received through callbacks.
 
 ```javascript
 //mesibo-worker.js
@@ -141,7 +140,7 @@ if(op.startsWith("Mesibo_On")) {
 ```
 
 ## Switching the active port
-After opening a chat session in multiple tabs, you may chose to close a tab. You may also close the active tab. In such a scenario, you will lose the connection to mesibo as it is the only one connected. So, you need to make one of the other connected tabs active and connect to mesibo using that so that you can continue to send messages and make calls on all your tabs.
+After opening a chat session in multiple tabs, you may choose to close a tab. You may also close the active tab. In such a scenario, you will lose the connection to mesibo as it is the only one connected. So, you need to make one of the other connected tabs active and connect to mesibo using that so that you can continue to send messages and make calls on all your tabs.
 
 ![](images/shared-worker/active-port.png) 
 
@@ -152,7 +151,7 @@ addEventListener( 'beforeunload', function() {
 });
 ```
 
-On the shared worker end, if you receive a `private_close` message from the active port you need to make on of the ports to be active and initialize mesibo on that port.
+On the shared worker end, if you receive a `private_close` message from the active port you need to make one of the ports to be active and initialize mesibo on that port.
 
 ```javascript
 //mesibo-shared.js
@@ -180,14 +179,14 @@ Edit `mesibo/config.js` and provide the `AUTH TOKEN` & `APP ID`.
 
 You can obtain the `AUTH TOKEN` and `APP ID` for a user from [Mesibo Console](https://mesibo.com/console/). You can also generate the token for the Web app from [Mesibo Demo App Token Geneartor](https://app.mesibo.com/gentoken/). Provide `APP ID` as `console`. 
 
-Refer to the [Preparation Guide](https://mesibo.com/documentation/tutorials/first-app/#preparation) to learn about basic of mesibo.
+Refer to the [Preparation Guide](https://mesibo.com/documentation/tutorials/first-app/#preparation) to learn about the basics of mesibo.
 
 ```javascript
 const MESIBO_ACCESS_TOKEN = "xxxxxxx";
 const MESIBO_APP_ID = "xxxx";
 const MESIBO_API_URL = "https://app.mesibo.com/api.php"
 ```
-If you are hosting mesibo-backend on your own server, you need to change the API url to point to your server.  
+If you are hosting mesibo-backend on your server, you need to change the API URL to point to your server.  
 
 ## Popup
 To launch popup demo you can configure the following for setting the displayed user avatar and destination user(to which all messages will be sent to) in `mesibo/config.js`. Open `index.html` in as many tabs as you like.
