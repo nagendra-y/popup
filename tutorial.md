@@ -73,15 +73,15 @@ So, in your app script initialize mesibo as follows:
 // Instead of directly accessing Mesibo APIs like so,
 // $scope.mesibo = new Mesibo();
 // use a wrapper API that uses a shared worker                          
-$scope.mesibo = new MesiboWorker($scope);
-$scope.mesiboNotify = $scope;
+let mesibo = new MesiboWorker($scope);
+let mesiboNotify = $scope;
 
 //Initialize Mesibo
-$scope.mesibo.setAppName(MESIBO_APP_ID);
-$scope.mesibo.setCredentials(MESIBO_ACCESS_TOKEN);
-$scope.mesibo.setListener($scope);
-$scope.mesibo.setDatabase("mesibo");
-$scope.mesibo.start(); 
+mesibo.setAppName(MESIBO_APP_ID);
+mesibo.setCredentials(MESIBO_ACCESS_TOKEN);
+mesibo.setListener($scope);
+mesibo.setDatabase("mesibo");
+mesibo.start(); 
 ```
 
 When you call `MesiboWorker.start`, a `start` message is sent to the shared worker
