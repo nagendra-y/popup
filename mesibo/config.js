@@ -50,7 +50,7 @@
  * 
  */
 
-var MESIBO_ACCESS_TOKEN = "";
+var MESIBO_ACCESS_TOKEN = "6af9f3c623f389793338cc56ce6aa27dea8c2a4b7576e33162571";
 
 /* App ID used to create a user token. */
 var MESIBO_APP_ID = "web";
@@ -115,7 +115,7 @@ const LINK_DEFAULT_IMAGE = "images/file/default-link-icon.jpg"
 const POPUP_DISPLAY_NAME = "Mesibo"
 const POPUP_DISPLAY_PICTURE = "images/profile/default-profile-icon.jpg"
 /* A destination where the popup demo app will send message or make calls */
-const POPUP_DESTINATION_USER = "";
+const POPUP_DESTINATION_USER = "popup2";
 
 /************************ Popup Config End *****************************/
 
