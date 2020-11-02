@@ -1,6 +1,6 @@
-// files.js
+// recorder.js
 
-/** Copyright (c) 2019 Mesibo
+/** Copyright (c) 2020 Mesibo
  * https://mesibo.com
  * All rights reserved.
  *
@@ -52,463 +52,604 @@
  */
 
 function MesiboRecorder(s, type) {
-  this.scope = s;
-  this.type = type;
+	this.scope = s;
+	this.type = type;
 
-  this.record = document.querySelector('.record');
-  this.stop = document.querySelector('.stop');
-  this.soundClips = document.querySelector('.sound-clips');
-  this.canvas = document.querySelector('.visualizer');
-  this.camera = document.querySelector('.camera');
-  this.stream = null;
+	this.record = document.querySelector('.record');
+	this.stop = document.querySelector('.stop');
+	this.mediaClips = document.querySelector('.sound-clips');
+	this.canvas = document.querySelector('.visualizer');
+	this.camera = document.querySelector('.camera');
+	this.stream = null;
 
-  this.canvasCtx = this.canvas.getContext("2d");
+	this.canvasCtx = this.canvas.getContext("2d");
 
-  window.rCtx = this; 
+	window.rCtx = this; 
 
-  if(type == 'audio')
-    this.audioRecorder();
-  else if(type == 'picture')
-    this.pictureRecorder();
+	if(type == 'audio')
+		this.audioRecorder();
+	else if(type == 'picture')
+		this.pictureRecorder();
 }
 
 MesiboRecorder.prototype.audioRecorder = function(){
 
-  // disable stop button while not recording
-  this.stop.disabled = true;
+	// disable stop button while not recording
+	this.stop.disabled = true;
 
-  // visualiser setup - create web audio api context and canvas
-  this.audioCtx = null;
- 
-  //Initially hide clips area and show only visualizer, record & stop buttons
-  this.canvas.style.display = "initial";
+	// visualiser setup - create web audio api context and canvas
+	this.audioCtx = null;
 
-  this.record.style.display = "inline-block";
-  this.stop.style.display = "inline-block";
+	//Initially hide clips area and show only visualizer, record & stop buttons
+	this.canvas.style.display = "initial";
 
-  this.soundClips.style.display = "none";
-  this.record.style.background = "";
-  this.record.style.color = "";
+	this.record.style.display = "inline-block";
+	this.stop.style.display = "inline-block";
 
-  this.camera.style.display = "none";
+	this.mediaClips.style.display = "none";
+	this.record.style.background = "";
+	this.record.style.color = "";
+
+	this.camera.style.display = "none";
 
 }
 
 MesiboRecorder.prototype.pictureRecorder = function(){
-  
-  this.camera.style.display = "block";  
 
-  this.canvas.style.display = "none";
-  this.record.style.display = "none";
-  this.stop.style.display = "none";
-  this.soundClips.style.display = "none";
+	this.camera.style.display = "block";  
 
-  this.video = document.getElementById("capture-video");
-  this.photo = document.getElementById('captured-photo');
+	this.canvas.style.display = "none";
+	// disable stop button while not recording
+	this.stop.disabled = true;
+	this.record.style.display = "inline-block";
+	this.stop.style.display = "inline-block";
 
-  this.video.style.display = "inline-block";
-  this.photo.style.display = "none";
+	this.mediaClips.style.display = "none";
+
+	this.video = document.getElementById("capture-video");
+	this.photo = document.getElementById('captured-photo');
+
+	this.video.style.display = "inline-block";
+	this.photo.style.display = "none";
 
 }
 
-//main block for doing the audio recording
+//main block for doing the video and picture recording
 MesiboRecorder.prototype.initPictureRecording = function(){
-  MesiboLog("initPictureRecording called", this);  
+	MesiboLog("initPictureRecording called", this);  
 
-  let rCtx = window.rCtx;
+	let rCtx = window.rCtx;
 
-  if(!rCtx.stream){
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-    .then(function(stream) { 
-        rCtx.stream = stream;     
-        rCtx.video.srcObject = stream;
-        rCtx.video.play();
-    })
-    .catch(function(err) {
-        console.log("An error occurred: " + err);
-    });
+	if(!rCtx.stream){
+		navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+			.then(function(stream) { 
+				rCtx.stream = stream;     
+				rCtx.video.srcObject = stream;
+				rCtx.video.play();
+				rCtx.recordMedia(stream, true); //Recording Video	
+			})
+			.catch(function(err) {
+				console.log("An error occurred: " + err);
+			});
 
-  }
-
-
-  // The width and height of the captured photo. We will set the
-  // width to the value defined here, but the height will be
-  // calculated based on the aspect ratio of the input stream.
-
-  var width = 320;    // We will scale the photo width to this
-  var height = 0;     // This will be computed based on the input stream
-  height = this.video.videoHeight / (this.video.videoWidth/width);
-
-  // |streaming| indicates whether or not we're currently streaming
-  // video from the camera. Obviously, we start at false.
-
-  var streaming = false;
-
-  this.video.addEventListener('canplay', function(ev){
-    if (!streaming) {      
-    
-      // Firefox currently has a bug where the height can't be read from
-      // the video, so we will make assumptions if this happens.
-    
-      if (isNaN(height)) {
-        height = width / (4/3);
-      }
-
-    
-      rCtx.video.setAttribute('width', width);
-      rCtx.video.setAttribute('height', height);
-      rCtx.canvas.setAttribute('width', width);
-      rCtx.canvas.setAttribute('height', height);
-      streaming = true;
-    }
-  }, false);
-
-  var startbutton = document.getElementById('startbutton');
-  startbutton.style.display = "inline-block";
-  while (rCtx.camera.lastElementChild) {
-    if(rCtx.camera.lastElementChild.classList.contains('clip'))
-      rCtx.camera.removeChild(rCtx.camera.lastElementChild);
-    else
-      break;
-  }
-  
-  startbutton.addEventListener('click', function(ev){
-    takepicture();
-    ev.preventDefault();
-  }, false);
-    
-  clearphoto();
-
-  
-  // Fill the photo with an indication that none has been
-  // captured.
-
-  function clearphoto() {
-    var context = rCtx.canvas.getContext('2d');
-    context.fillStyle = "#AAA";
-    context.fillRect(0, 0, rCtx.canvas.width, rCtx.canvas.height);
-
-    var data = rCtx.canvas.toDataURL('image/png');
-    
-    rCtx.photo.setAttribute('src', data);
-  }
-  
-  // Capture a photo by fetching the current contents of the video
-  // and drawing it into a canvas, then converting that to a PNG
-  // format data URL. By drawing it on an offscreen canvas and then
-  // drawing that to the screen, we can change its size and/or apply
-  // other changes before drawing it.
-
-  function takepicture() {
-    var context = rCtx.canvas.getContext('2d');
-    if (width && height) {
-      rCtx.canvas.width = width;
-      rCtx.canvas.height = height;
-      context.drawImage(rCtx.video, 0, 0, width, height);
-    
-      var data = rCtx.canvas.toDataURL('image/png');
-      
-      rCtx.photo.setAttribute('src', data);
-      rCtx.photo.style.display = "inline-block";
-
-      rCtx.video.style.display = "none";
-
-      const buttonContainer = document.createElement('article');
-      const cancelButton = document.createElement('button');
-      const sendButton = document.createElement('button');
-
-      buttonContainer.classList.add('clip');
-      buttonContainer.style.textAlign = 'center';
-      cancelButton.textContent = 'Cancel';
-      cancelButton.className = 'cancel btn btn-danger';
-      cancelButton.style.marginTop = '5px';
-      cancelButton.style.marginLeft = '5px';
-
-      sendButton.textContent = 'Send';
-      sendButton.className = 'send btn btn-success';
-      sendButton.style.marginTop = '5px';
-      
-      buttonContainer.appendChild(sendButton);
-      buttonContainer.appendChild(cancelButton);
-
-      while (rCtx.camera.lastElementChild) {
-        if(rCtx.camera.lastElementChild.classList.contains('clip'))
-          rCtx.camera.removeChild(rCtx.camera.lastElementChild);
-        else
-          break;
-      }
-
-      rCtx.camera.appendChild(buttonContainer);
-      document.getElementById('startbutton').style.display = "none";      
+	}
 
 
-      function resetRecorder(e){
-        let evtTgt = e.target;
-        evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+	// The width and height of the captured photo. We will set the
+	// width to the value defined here, but the height will be
+	// calculated based on the aspect ratio of the input stream.
 
-        rCtx.pictureRecorder();
-      }
+	var width = 320;    // We will scale the photo width to this
+	var height = 0;     // This will be computed based on the input stream
+	height = this.video.videoHeight / (this.video.videoWidth/width);
 
-      cancelButton.onclick = function(e) {
-        resetRecorder(e);
-        rCtx.pictureRecorder();
-        rCtx.initPictureRecording();        
-      }
+	// |streaming| indicates whether or not we're currently streaming
+	// video from the camera. Obviously, we start at false.
 
-      sendButton.onclick = function(e) {
-        var blob = rCtx._dataURItoBlob(data);
-        var image = rCtx._blobToFile(blob, "capture-"+ Date.now()+".png", {type: "image/png"})
-        rCtx.sendRecordedFile(image);
-        MesiboLog("close stream", rCtx.stream, rCtx.stream.getTracks());
-        rCtx.scope.closeRecorder(); //TBD: Should we close the recorder when the send button is clicked 
-      }
+	var streaming = false;
+
+	this.video.addEventListener('canplay', function(ev){
+		if (!streaming) {      
+
+			// Firefox currently has a bug where the height can't be read from
+			// the video, so we will make assumptions if this happens.
+
+			if (isNaN(height)) {
+				height = width / (4/3);
+			}
 
 
-    } else {
-      clearphoto();
-    }
-  }
+			rCtx.video.setAttribute('width', width);
+			rCtx.video.setAttribute('height', height);
+			rCtx.canvas.setAttribute('width', width);
+			rCtx.canvas.setAttribute('height', height);
+			streaming = true;
+		}
+	}, false);
+
+	var startbutton = document.getElementById('startbutton');
+	startbutton.style.display = "inline-block";
+	while (rCtx.camera.lastElementChild) {
+		if(rCtx.camera.lastElementChild.classList.contains('clip'))
+			rCtx.camera.removeChild(rCtx.camera.lastElementChild);
+		else
+			break;
+	}
+
+	startbutton.addEventListener('click', function(ev){
+		takepicture();
+		ev.preventDefault();
+		document.getElementById("buttons").style.display = "none";
+	}, false);
+
+	clearphoto();
+
+
+	// Fill the photo with an indication that none has been
+	// captured.
+
+	function clearphoto() {
+		var context = rCtx.canvas.getContext('2d');
+		context.fillStyle = "#AAA";
+		context.fillRect(0, 0, rCtx.canvas.width, rCtx.canvas.height);
+
+		var data = rCtx.canvas.toDataURL('image/png');
+
+		rCtx.photo.setAttribute('src', data);
+	}
+
+	// Capture a photo by fetching the current contents of the video
+	// and drawing it into a canvas, then converting that to a PNG
+	// format data URL. By drawing it on an offscreen canvas and then
+	// drawing that to the screen, we can change its size and/or apply
+	// other changes before drawing it.
+
+	function takepicture() {
+		var context = rCtx.canvas.getContext('2d');
+		if (width && height) {
+			rCtx.canvas.width = width;
+			rCtx.canvas.height = height;
+			context.drawImage(rCtx.video, 0, 0, width, height);
+
+			var data = rCtx.canvas.toDataURL('image/png');
+
+			rCtx.photo.setAttribute('src', data);
+			rCtx.photo.style.display = "inline-block";
+
+			rCtx.video.style.display = "none";
+
+			const buttonContainer = document.createElement('article');
+			const cancelButton = document.createElement('button');
+			const sendButton = document.createElement('button');
+
+			buttonContainer.classList.add('clip');
+			buttonContainer.style.textAlign = 'center';
+			cancelButton.textContent = 'Cancel';
+			cancelButton.className = 'cancel btn btn-danger';
+			cancelButton.style.marginTop = '5px';
+			cancelButton.style.marginLeft = '5px';
+
+			sendButton.textContent = 'Send';
+			sendButton.className = 'send btn btn-success';
+			sendButton.style.marginTop = '5px';
+
+			buttonContainer.appendChild(sendButton);
+			buttonContainer.appendChild(cancelButton);
+
+			while (rCtx.camera.lastElementChild) {
+				if(rCtx.camera.lastElementChild.classList.contains('clip'))
+					rCtx.camera.removeChild(rCtx.camera.lastElementChild);
+				else
+					break;
+			}
+
+			rCtx.camera.appendChild(buttonContainer);
+			document.getElementById('startbutton').style.display = "none";      
+
+
+			function resetRecorder(e){
+				let evtTgt = e.target;
+				evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+				document.getElementById("buttons").style.display = "block";
+			}
+
+			cancelButton.onclick = function(e) {
+				resetRecorder(e);
+				rCtx.pictureRecorder();
+				rCtx.initPictureRecording();        
+			}
+
+			sendButton.onclick = function(e) {
+				var blob = rCtx._dataURItoBlob(data);
+				var image = rCtx._blobToFile(blob, "capture-"+ Date.now()+".png", {type: "image/png"})
+				rCtx.sendRecordedFile(image);
+				MesiboLog("close stream", rCtx.stream, rCtx.stream.getTracks());
+				rCtx.scope.closeRecorder(); //TBD: Should we close the recorder when the send button is clicked 
+			}
+
+
+		} else {
+			clearphoto();
+		}
+	}
 
 }
+
+MesiboRecorder.prototype.recordMedia = function(stream, video){
+	let chunks = [];
+	let rCtx = this;
+	if(video){
+		//Record video
+	}
+	else {
+		//Record Audio
+	}
+
+	const mediaRecorder = new MediaRecorder(stream);
+
+	rCtx.stream = stream;
+
+	rCtx.record.onclick = function() {
+		mediaRecorder.start();
+		console.log(mediaRecorder.state);
+		console.log("recorder started");
+		rCtx.record.style.background = "red";
+
+		rCtx.stop.disabled = false;
+		rCtx.record.disabled = true;
+
+		document.getElementById("startbutton").disabled = true;
+	}
+
+	rCtx.stop.onclick = function() {
+		mediaRecorder.stop();
+		console.log(mediaRecorder.state);
+		console.log("recorder stopped");
+		rCtx.record.style.background = "";
+		rCtx.record.style.color = "";
+
+		rCtx.stop.disabled = true;
+		rCtx.record.disabled = false;
+	}
+
+	mediaRecorder.onstop = function(e) {
+		console.log("data available after MediaRecorder.stop() called.");
+
+		// const clipName = prompt('Enter a name for your sound clip?','My unnamed clip');
+		const clipName = null; //Disabling clip name/caption for now
+
+		const clipContainer = document.createElement('article');
+		const clipLabel = document.createElement('p');
+		
+		var media = null;
+		if(video){
+			document.getElementById("recording-area").style.display = "none"
+			media = document.createElement('video');
+			media.width = "320";
+			media.height = "240";
+		}
+		else{
+			media = document.createElement('audio');
+		}
+		const cancelButton = document.createElement('button');
+		const sendButton = document.createElement('button');
+
+		clipContainer.classList.add('clip');
+		clipContainer.style.textAlign = 'center';
+		media.setAttribute('controls', '');
+		cancelButton.textContent = 'Cancel';
+		cancelButton.className = 'cancel btn btn-danger';
+		cancelButton.style.marginLeft = '5px';
+		sendButton.textContent = 'Send';
+		sendButton.className = 'send btn btn-success ml-1';
+
+		if(clipName === null) {
+			clipLabel.textContent = '';
+		} else {
+			clipLabel.textContent = clipName;
+		}
+
+		rCtx.record.style.display = "none";
+		rCtx.stop.style.display = "none";
+
+		clipContainer.appendChild(media);
+		clipContainer.appendChild(clipLabel);
+		clipContainer.appendChild(sendButton);
+		clipContainer.appendChild(cancelButton);      
+
+		while (rCtx.mediaClips.lastElementChild) {
+			rCtx.mediaClips.removeChild(rCtx.mediaClips.lastElementChild);
+		}
+		rCtx.mediaClips.appendChild(clipContainer);
+		rCtx.mediaClips.style.display = "block";
+
+		media.controls = true;
+		
+		var blob = null;
+		if(video)	
+			blob = new Blob(chunks, { 'type' : 'video/mp4; codecs=opus' });
+		else
+			blob = new Blob(chunks, { 'type' : 'audio/webm; codecs=opus' });
+		chunks = [];
+		const mediaUrl = window.URL.createObjectURL(blob);
+		media.src = mediaUrl;
+
+		var mediaFile = null;
+
+		if(video)
+			mediaFile = rCtx._blobToFile(blob, clipLabel.textContent + '.mp4', {type: "video/mp4"});
+		else
+			mediaFile = rCtx._blobToFile(blob, clipLabel.textContent + '.wav', {type: "audio/wav"});
+
+		function resetRecorder(e){
+
+			let evtTgt = e.target;
+			evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+
+			rCtx.canvas.style.display = "initial";
+			rCtx.record.style.display = "inline-block";
+			rCtx.stop.style.display = "inline-block";
+
+			rCtx.record.style.background = "";
+			rCtx.record.style.color = "";
+		}
+
+		cancelButton.onclick = function(e) {
+			resetRecorder(e);        
+		}
+
+		sendButton.onclick = function(e) {
+			rCtx.sendRecordedFile(mediaFile);
+			MesiboLog("close stream", rCtx.stream);
+			rCtx.scope.closeRecorder(); //TBD: Should we close the recorder when the send button is clicked 
+		}
+
+	}
+
+	mediaRecorder.ondataavailable = function(e) {
+		chunks.push(e.data);
+	}
+}
+
 
 
 //main block for doing the audio recording
 MesiboRecorder.prototype.initAudioRecording = function(){
-  MesiboLog("initAudioRecording called..");
-  this.canvas.height = "60";
+	MesiboLog("initAudioRecording called..");
+	this.canvas.height = "60";
 
-  if (!navigator.mediaDevices.getUserMedia){
-    console.log('getUserMedia not supported on your browser!');
-    return -1;
-  }
+	if (!navigator.mediaDevices.getUserMedia){
+		console.log('getUserMedia not supported on your browser!');
+		return -1;
+	}
 
-  const constraints = { audio: true };
-  let chunks = [];
+	const constraints = { audio: true };
+	let chunks = [];
 
-  let rCtx = window.rCtx; 
-  let onSuccess = function(stream) {
+	let rCtx = window.rCtx; 
+	let onSuccess = function(stream) {
 
-    const mediaRecorder = new MediaRecorder(stream);
+		const mediaRecorder = new MediaRecorder(stream);
 
-    rCtx.stream = stream;
-    rCtx.visualize(stream);
+		rCtx.stream = stream;
+		rCtx.visualize(stream);
 
-    rCtx.record.onclick = function() {
-      mediaRecorder.start();
-      console.log(mediaRecorder.state);
-      console.log("recorder started");
-      rCtx.record.style.background = "red";
+		rCtx.record.onclick = function() {
+			mediaRecorder.start();
+			console.log(mediaRecorder.state);
+			console.log("recorder started");
+			rCtx.record.style.background = "red";
 
-      rCtx.stop.disabled = false;
-      rCtx.record.disabled = true;
-    }
+			rCtx.stop.disabled = false;
+			rCtx.record.disabled = true;
+		}
 
-    rCtx.stop.onclick = function() {
-      mediaRecorder.stop();
-      console.log(mediaRecorder.state);
-      console.log("recorder stopped");
-      rCtx.record.style.background = "";
-      rCtx.record.style.color = "";
-      // mediaRecorder.requestData();
+		rCtx.stop.onclick = function() {
+			mediaRecorder.stop();
+			console.log(mediaRecorder.state);
+			console.log("recorder stopped");
+			rCtx.record.style.background = "";
+			rCtx.record.style.color = "";
+			// mediaRecorder.requestData();
 
-      rCtx.stop.disabled = true;
-      rCtx.record.disabled = false;
-    }
+			rCtx.stop.disabled = true;
+			rCtx.record.disabled = false;
+		}
 
-    mediaRecorder.onstop = function(e) {
-      console.log("data available after MediaRecorder.stop() called.");
+		mediaRecorder.onstop = function(e) {
+			console.log("data available after MediaRecorder.stop() called.");
 
-      // const clipName = prompt('Enter a name for your sound clip?','My unnamed clip');
-      const clipName = null; //Disabling clip name/caption for now
+			// const clipName = prompt('Enter a name for your sound clip?','My unnamed clip');
+			const clipName = null; //Disabling clip name/caption for now
 
-      const clipContainer = document.createElement('article');
-      const clipLabel = document.createElement('p');
-      const audio = document.createElement('audio');
-      const cancelButton = document.createElement('button');
-      const sendButton = document.createElement('button');
+			const clipContainer = document.createElement('article');
+			const clipLabel = document.createElement('p');
+			const audio = document.createElement('audio');
+			const cancelButton = document.createElement('button');
+			const sendButton = document.createElement('button');
 
-      clipContainer.classList.add('clip');
-      clipContainer.style.textAlign = 'center';
-      audio.setAttribute('controls', '');
-      cancelButton.textContent = 'Cancel';
-      cancelButton.className = 'cancel btn btn-danger';
-      cancelButton.style.marginLeft = '5px';
-      sendButton.textContent = 'Send';
-      sendButton.className = 'send btn btn-success ml-1';
+			clipContainer.classList.add('clip');
+			clipContainer.style.textAlign = 'center';
+			audio.setAttribute('controls', '');
+			cancelButton.textContent = 'Cancel';
+			cancelButton.className = 'cancel btn btn-danger';
+			cancelButton.style.marginLeft = '5px';
+			sendButton.textContent = 'Send';
+			sendButton.className = 'send btn btn-success ml-1';
 
-      if(clipName === null) {
-        clipLabel.textContent = '';
-      } else {
-        clipLabel.textContent = clipName;
-      }
+			if(clipName === null) {
+				clipLabel.textContent = '';
+			} else {
+				clipLabel.textContent = clipName;
+			}
 
-      rCtx.canvas.style.display = "none";
-      rCtx.record.style.display = "none";
-      rCtx.stop.style.display = "none";
+			rCtx.canvas.style.display = "none";
+			rCtx.record.style.display = "none";
+			rCtx.stop.style.display = "none";
 
-      clipContainer.appendChild(audio);
-      clipContainer.appendChild(clipLabel);
-      clipContainer.appendChild(sendButton);
-      clipContainer.appendChild(cancelButton);      
+			clipContainer.appendChild(audio);
+			clipContainer.appendChild(clipLabel);
+			clipContainer.appendChild(sendButton);
+			clipContainer.appendChild(cancelButton);      
 
-      while (rCtx.soundClips.lastElementChild) {
-        rCtx.soundClips.removeChild(rCtx.soundClips.lastElementChild);
-      }
-      rCtx.soundClips.appendChild(clipContainer);
-      rCtx.soundClips.style.display = "block";
+			while (rCtx.mediaClips.lastElementChild) {
+				rCtx.mediaClips.removeChild(rCtx.mediaClips.lastElementChild);
+			}
+			rCtx.mediaClips.appendChild(clipContainer);
+			rCtx.mediaClips.style.display = "block";
 
-      audio.controls = true;
-      const blob = new Blob(chunks, { 'type' : 'audio/webm; codecs=opus' });
-      chunks = [];
-      const audioURL = window.URL.createObjectURL(blob);
-      audio.src = audioURL;
-      
-      var audioFile = rCtx._blobToFile(blob, clipLabel.textContent + '.wav', {type: "audio/wav"});
+			audio.controls = true;
+			const blob = new Blob(chunks, { 'type' : 'audio/webm; codecs=opus' });
+			chunks = [];
+			const audioURL = window.URL.createObjectURL(blob);
+			audio.src = audioURL;
 
-      function resetRecorder(e){
+			var audioFile = rCtx._blobToFile(blob, clipLabel.textContent + '.wav', {type: "audio/wav"});
 
-        let evtTgt = e.target;
-        evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+			function resetRecorder(e){
 
-        rCtx.canvas.style.display = "initial";
-        rCtx.record.style.display = "inline-block";
-        rCtx.stop.style.display = "inline-block";
+				let evtTgt = e.target;
+				evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
 
-        rCtx.record.style.background = "";
-        rCtx.record.style.color = "";
-      }
+				rCtx.canvas.style.display = "initial";
+				rCtx.record.style.display = "inline-block";
+				rCtx.stop.style.display = "inline-block";
 
-      cancelButton.onclick = function(e) {
-        resetRecorder(e);        
-      }
+				rCtx.record.style.background = "";
+				rCtx.record.style.color = "";
+			}
 
-      sendButton.onclick = function(e) {
-        rCtx.sendRecordedFile(audioFile);
-        MesiboLog("close stream", rCtx.stream);
-        rCtx.scope.closeRecorder(); //TBD: Should we close the recorder when the send button is clicked 
-      }
+			cancelButton.onclick = function(e) {
+				resetRecorder(e);        
+			}
 
-    }
+			sendButton.onclick = function(e) {
+				rCtx.sendRecordedFile(audioFile);
+				MesiboLog("close stream", rCtx.stream);
+				rCtx.scope.closeRecorder(); //TBD: Should we close the recorder when the send button is clicked 
+			}
 
-    mediaRecorder.ondataavailable = function(e) {
-      chunks.push(e.data);
-    }
-  }
+		}
 
-  let onError = function(err) {
-    console.log('The following error occured: ' + err);
-  }
+		mediaRecorder.ondataavailable = function(e) {
+			chunks.push(e.data);
+		}
+	}
 
-  navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
+	let onError = function(err) {
+		console.log('The following error occured: ' + err);
+	}
+
+	navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
 
 }
 
 MesiboRecorder.prototype._blobToFile = function(b, fileName, options){    
-    var file = new File([b], fileName, options);
-    MesiboLog("_blobToFile, generated file of type", file.type, file.name) 
-    return file;
+	var file = new File([b], fileName, options);
+	MesiboLog("_blobToFile, generated file of type", file.type, file.name) 
+	return file;
 }
 
 MesiboRecorder.prototype._dataURItoBlob = function(dataURI) {
-  // convert base64 to raw binary data held in a string
-  // doesn't handle URLEncoded DataURIs 
-  var byteString = atob(dataURI.split(',')[1]);
+	// convert base64 to raw binary data held in a string
+	// doesn't handle URLEncoded DataURIs 
+	var byteString = atob(dataURI.split(',')[1]);
 
-  // separate out the mime component
-  var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+	// separate out the mime component
+	var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
 
-  // write the bytes of the string to an ArrayBuffer
-  var ab = new ArrayBuffer(byteString.length);
+	// write the bytes of the string to an ArrayBuffer
+	var ab = new ArrayBuffer(byteString.length);
 
-  // create a view into the buffer
-  var ia = new Uint8Array(ab);
+	// create a view into the buffer
+	var ia = new Uint8Array(ab);
 
-  // set the bytes of the buffer to the correct values
-  for (var i = 0; i < byteString.length; i++) {
-    ia[i] = byteString.charCodeAt(i);
-  }
+	// set the bytes of the buffer to the correct values
+	for (var i = 0; i < byteString.length; i++) {
+		ia[i] = byteString.charCodeAt(i);
+	}
 
-  // write the ArrayBuffer to a blob, and you're done
-  var blob = new Blob([ab], {
-    type: mimeString
-  });
-  return blob;
+	// write the ArrayBuffer to a blob, and you're done
+	var blob = new Blob([ab], {
+		type: mimeString
+	});
+	return blob;
 
 }
 
 MesiboRecorder.prototype.sendRecordedFile = function(f){
-  MesiboLog("sendRecordedFile", f);
-  this.scope.selected_file = f;
-  this.scope.sendFile();
+	MesiboLog("sendRecordedFile", f);
+	this.scope.selected_file = f;
+	this.scope.sendFile();
 }
 
 MesiboRecorder.prototype.visualize = function(stream) {
-  // MesiboLog("visualize this", this);
-  if(!this.audioCtx) {
-    this.audioCtx = new AudioContext();
-  }
+	// MesiboLog("visualize this", this);
+	if(!this.audioCtx) {
+		this.audioCtx = new AudioContext();
+	}
 
-  const source = this.audioCtx.createMediaStreamSource(stream);
+	const source = this.audioCtx.createMediaStreamSource(stream);
 
-  const analyser = this.audioCtx.createAnalyser();
-  analyser.fftSize = 2048;
-  const bufferLength = analyser.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLength);
+	const analyser = this.audioCtx.createAnalyser();
+	analyser.fftSize = 2048;
+	const bufferLength = analyser.frequencyBinCount;
+	const dataArray = new Uint8Array(bufferLength);
 
-  source.connect(analyser);
-  //analyser.connect(audioCtx.destination);
+	source.connect(analyser);
+	//analyser.connect(audioCtx.destination);
 
-  draw(); 
+	draw(); 
 
-  function draw() {
-    let rCtx = window.rCtx;
-    const WIDTH = rCtx.canvas.width;
-    const HEIGHT = rCtx.canvas.height;
+	function draw() {
+		let rCtx = window.rCtx;
+		const WIDTH = rCtx.canvas.width;
+		const HEIGHT = rCtx.canvas.height;
 
-    requestAnimationFrame(draw);
+		requestAnimationFrame(draw);
 
-    analyser.getByteTimeDomainData(dataArray);
+		analyser.getByteTimeDomainData(dataArray);
 
-    rCtx.canvasCtx.fillStyle = 'rgb(200, 200, 200)';
-    rCtx.canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+		rCtx.canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+		rCtx.canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    rCtx.canvasCtx.lineWidth = 2;
-    rCtx.canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
+		rCtx.canvasCtx.lineWidth = 2;
+		rCtx.canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
 
-    rCtx.canvasCtx.beginPath();
+		rCtx.canvasCtx.beginPath();
 
-    let sliceWidth = WIDTH * 1.0 / bufferLength;
-    let x = 0;
+		let sliceWidth = WIDTH * 1.0 / bufferLength;
+		let x = 0;
 
 
-    for(let i = 0; i < bufferLength; i++) {
+		for(let i = 0; i < bufferLength; i++) {
 
-      let v = dataArray[i] / 128.0;
-      let y = v * HEIGHT/2;
+			let v = dataArray[i] / 128.0;
+			let y = v * HEIGHT/2;
 
-      if(i === 0) {
-        rCtx.canvasCtx.moveTo(x, y);
-      } else {
-        rCtx.canvasCtx.lineTo(x, y);
-      }
+			if(i === 0) {
+				rCtx.canvasCtx.moveTo(x, y);
+			} else {
+				rCtx.canvasCtx.lineTo(x, y);
+			}
 
-      x += sliceWidth;
-    }
+			x += sliceWidth;
+		}
 
-    rCtx.canvasCtx.lineTo(rCtx.canvas.width, rCtx.canvas.height/2);
-    rCtx.canvasCtx.stroke();
+		rCtx.canvasCtx.lineTo(rCtx.canvas.width, rCtx.canvas.height/2);
+		rCtx.canvasCtx.stroke();
 
-  }
+	}
 
 }
 
 MesiboRecorder.prototype.close = function(){
-  MesiboLog("MesiboRecorder.close called", this.stream.getTracks(), this.type);
+	MesiboLog("MesiboRecorder.close called", this.stream.getTracks(), this.type);
 
-  this.stream.getTracks().forEach(function(track) {
-    MesiboLog('close Track', track); 
-      track.stop();    
-  });
+	this.stream.getTracks().forEach(function(track) {
+		MesiboLog('close Track', track); 
+		track.stop();    
+	});
 
 }
 
