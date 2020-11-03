@@ -60,6 +60,7 @@ function MesiboRecorder(s, type) {
 	this.mediaClips = document.querySelector('.sound-clips');
 	this.canvas = document.querySelector('.visualizer');
 	this.camera = document.querySelector('.camera');
+	this.photo = document.getElementById('photo_button');
 	this.stream = null;
 
 	this.canvasCtx = this.canvas.getContext("2d");
@@ -99,6 +100,7 @@ MesiboRecorder.prototype.pictureRecorder = function(){
 	this.camera.style.display = "block";  
 
 	this.canvas.style.display = "none";
+	this.photo.disabled = false;
 	// disable stop button while not recording
 	this.stop.disabled = true;
 	this.record.style.display = "inline-block";
@@ -106,11 +108,15 @@ MesiboRecorder.prototype.pictureRecorder = function(){
 
 	this.mediaClips.style.display = "none";
 
+
 	this.video = document.getElementById("capture-video");
 	this.photo = document.getElementById('captured-photo');
 
 	this.video.style.display = "inline-block";
 	this.photo.style.display = "none";
+
+	document.getElementById("buttons").style.display = "block";
+	document.getElementById("recording_area").style.display = "block";
 
 }
 
@@ -167,8 +173,8 @@ MesiboRecorder.prototype.initPictureRecording = function(){
 		}
 	}, false);
 
-	var startbutton = document.getElementById('startbutton');
-	startbutton.style.display = "inline-block";
+	var photo_button = document.getElementById('photo_button');
+	photo_button.style.display = "inline-block";
 	while (rCtx.camera.lastElementChild) {
 		if(rCtx.camera.lastElementChild.classList.contains('clip'))
 			rCtx.camera.removeChild(rCtx.camera.lastElementChild);
@@ -176,7 +182,7 @@ MesiboRecorder.prototype.initPictureRecording = function(){
 			break;
 	}
 
-	startbutton.addEventListener('click', function(ev){
+	photo_button.addEventListener('click', function(ev){
 		takepicture();
 		ev.preventDefault();
 		document.getElementById("buttons").style.display = "none";
@@ -244,13 +250,14 @@ MesiboRecorder.prototype.initPictureRecording = function(){
 			}
 
 			rCtx.camera.appendChild(buttonContainer);
-			document.getElementById('startbutton').style.display = "none";      
+			document.getElementById('photo_button').style.display = "none";      
 
 
 			function resetRecorder(e){
 				let evtTgt = e.target;
 				evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
 				document.getElementById("buttons").style.display = "block";
+				document.getElementById("recording_area").style.display = "block";
 			}
 
 			cancelButton.onclick = function(e) {
@@ -276,19 +283,21 @@ MesiboRecorder.prototype.initPictureRecording = function(){
 }
 
 MesiboRecorder.prototype.recordMedia = function(stream, video){
+	MesiboLog("recordMedia", stream, video);
+	if(!stream)
+		return;
+
 	let chunks = [];
 	let rCtx = this;
-	if(video){
-		//Record video
-	}
-	else {
-		//Record Audio
-	}
-
+	
 	const mediaRecorder = new MediaRecorder(stream);
 
 	rCtx.stream = stream;
-
+	if(!video){
+		MesiboLog("Activate audio visuals");
+		rCtx.visualize(stream);
+	}
+	
 	rCtx.record.onclick = function() {
 		mediaRecorder.start();
 		console.log(mediaRecorder.state);
@@ -298,7 +307,9 @@ MesiboRecorder.prototype.recordMedia = function(stream, video){
 		rCtx.stop.disabled = false;
 		rCtx.record.disabled = true;
 
-		document.getElementById("startbutton").disabled = true;
+		let pb = document.getElementById("photo_button");
+		if(pb)
+			pb.disabled = true;
 	}
 
 	rCtx.stop.onclick = function() {
@@ -320,10 +331,10 @@ MesiboRecorder.prototype.recordMedia = function(stream, video){
 
 		const clipContainer = document.createElement('article');
 		const clipLabel = document.createElement('p');
-		
+
 		var media = null;
 		if(video){
-			document.getElementById("recording-area").style.display = "none"
+			document.getElementById("recording_area").style.display = "none";
 			media = document.createElement('video');
 			media.width = "320";
 			media.height = "240";
@@ -336,7 +347,6 @@ MesiboRecorder.prototype.recordMedia = function(stream, video){
 
 		clipContainer.classList.add('clip');
 		clipContainer.style.textAlign = 'center';
-		media.setAttribute('controls', '');
 		cancelButton.textContent = 'Cancel';
 		cancelButton.className = 'cancel btn btn-danger';
 		cancelButton.style.marginLeft = '5px';
@@ -348,7 +358,8 @@ MesiboRecorder.prototype.recordMedia = function(stream, video){
 		} else {
 			clipLabel.textContent = clipName;
 		}
-
+		
+		rCtx.canvas.style.display = "none";
 		rCtx.record.style.display = "none";
 		rCtx.stop.style.display = "none";
 
@@ -364,7 +375,7 @@ MesiboRecorder.prototype.recordMedia = function(stream, video){
 		rCtx.mediaClips.style.display = "block";
 
 		media.controls = true;
-		
+
 		var blob = null;
 		if(video)	
 			blob = new Blob(chunks, { 'type' : 'video/mp4; codecs=opus' });
@@ -386,12 +397,20 @@ MesiboRecorder.prototype.recordMedia = function(stream, video){
 			let evtTgt = e.target;
 			evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
 
-			rCtx.canvas.style.display = "initial";
+			if(!video)
+				rCtx.canvas.style.display = "initial";
 			rCtx.record.style.display = "inline-block";
 			rCtx.stop.style.display = "inline-block";
 
 			rCtx.record.style.background = "";
 			rCtx.record.style.color = "";
+			
+			if(video){
+				this.photo_button.disabled = false;
+				document.getElementById("buttons").style.display = "block";
+				document.getElementById("recording_area").style.display = "block";
+			}
+
 		}
 
 		cancelButton.onclick = function(e) {
@@ -428,112 +447,7 @@ MesiboRecorder.prototype.initAudioRecording = function(){
 
 	let rCtx = window.rCtx; 
 	let onSuccess = function(stream) {
-
-		const mediaRecorder = new MediaRecorder(stream);
-
-		rCtx.stream = stream;
-		rCtx.visualize(stream);
-
-		rCtx.record.onclick = function() {
-			mediaRecorder.start();
-			console.log(mediaRecorder.state);
-			console.log("recorder started");
-			rCtx.record.style.background = "red";
-
-			rCtx.stop.disabled = false;
-			rCtx.record.disabled = true;
-		}
-
-		rCtx.stop.onclick = function() {
-			mediaRecorder.stop();
-			console.log(mediaRecorder.state);
-			console.log("recorder stopped");
-			rCtx.record.style.background = "";
-			rCtx.record.style.color = "";
-			// mediaRecorder.requestData();
-
-			rCtx.stop.disabled = true;
-			rCtx.record.disabled = false;
-		}
-
-		mediaRecorder.onstop = function(e) {
-			console.log("data available after MediaRecorder.stop() called.");
-
-			// const clipName = prompt('Enter a name for your sound clip?','My unnamed clip');
-			const clipName = null; //Disabling clip name/caption for now
-
-			const clipContainer = document.createElement('article');
-			const clipLabel = document.createElement('p');
-			const audio = document.createElement('audio');
-			const cancelButton = document.createElement('button');
-			const sendButton = document.createElement('button');
-
-			clipContainer.classList.add('clip');
-			clipContainer.style.textAlign = 'center';
-			audio.setAttribute('controls', '');
-			cancelButton.textContent = 'Cancel';
-			cancelButton.className = 'cancel btn btn-danger';
-			cancelButton.style.marginLeft = '5px';
-			sendButton.textContent = 'Send';
-			sendButton.className = 'send btn btn-success ml-1';
-
-			if(clipName === null) {
-				clipLabel.textContent = '';
-			} else {
-				clipLabel.textContent = clipName;
-			}
-
-			rCtx.canvas.style.display = "none";
-			rCtx.record.style.display = "none";
-			rCtx.stop.style.display = "none";
-
-			clipContainer.appendChild(audio);
-			clipContainer.appendChild(clipLabel);
-			clipContainer.appendChild(sendButton);
-			clipContainer.appendChild(cancelButton);      
-
-			while (rCtx.mediaClips.lastElementChild) {
-				rCtx.mediaClips.removeChild(rCtx.mediaClips.lastElementChild);
-			}
-			rCtx.mediaClips.appendChild(clipContainer);
-			rCtx.mediaClips.style.display = "block";
-
-			audio.controls = true;
-			const blob = new Blob(chunks, { 'type' : 'audio/webm; codecs=opus' });
-			chunks = [];
-			const audioURL = window.URL.createObjectURL(blob);
-			audio.src = audioURL;
-
-			var audioFile = rCtx._blobToFile(blob, clipLabel.textContent + '.wav', {type: "audio/wav"});
-
-			function resetRecorder(e){
-
-				let evtTgt = e.target;
-				evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
-
-				rCtx.canvas.style.display = "initial";
-				rCtx.record.style.display = "inline-block";
-				rCtx.stop.style.display = "inline-block";
-
-				rCtx.record.style.background = "";
-				rCtx.record.style.color = "";
-			}
-
-			cancelButton.onclick = function(e) {
-				resetRecorder(e);        
-			}
-
-			sendButton.onclick = function(e) {
-				rCtx.sendRecordedFile(audioFile);
-				MesiboLog("close stream", rCtx.stream);
-				rCtx.scope.closeRecorder(); //TBD: Should we close the recorder when the send button is clicked 
-			}
-
-		}
-
-		mediaRecorder.ondataavailable = function(e) {
-			chunks.push(e.data);
-		}
+		rCtx.recordMedia(stream, false); //Audio Recording
 	}
 
 	let onError = function(err) {
@@ -584,7 +498,7 @@ MesiboRecorder.prototype.sendRecordedFile = function(f){
 }
 
 MesiboRecorder.prototype.visualize = function(stream) {
-	// MesiboLog("visualize this", this);
+	MesiboLog("visualize", stream);
 	if(!this.audioCtx) {
 		this.audioCtx = new AudioContext();
 	}
