@@ -142,12 +142,22 @@ message_handler = function (event, port) {
 
 
 	if(op == "readMessages"){
-		console.log("mesibo-shared:", "readMessages", data)
+		console.log("mesibo-shared:", "readMessages", data, active_port)
 		send_to_port(active_port, null, data);
 	}
 
 	if(op == "readMessagesResult"){
 		console.log("mesibo-shared:", "readMessagesResult", data)
+		send_to_all(null, data);
+	}
+	
+	if(op == "syncMessages"){
+		console.log("mesibo-shared:", "syncMessages", data)
+		send_to_port(active_port, null, data);
+	}
+
+	if(op == "syncMessagesResult"){
+		console.log("mesibo-shared:", "syncMessagesResult", data)
 		send_to_all(null, data);
 	}
 

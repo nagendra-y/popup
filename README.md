@@ -1,4 +1,4 @@
-## Multi-Tab Chat Popup
+## Multi-Tab Chat Popup [BETA]
 This repository contains the source code for a multi-tab, Mesibo Messenger Popup app using Mesibo Javascript API.
 
 **For the single-tab version refer https://github.com/mesibo/messenger-javascript**
@@ -14,7 +14,8 @@ This multi-tab popup has the same features as of the single-tab version with one
 - Record and Send live audio from microphone
 - Send photos captured live using Webcam
 - Chat history
-- Link Preview 
+- Link Preview
+- On-Demand read and sync
 
 
 ## Multi-tab Sessions 

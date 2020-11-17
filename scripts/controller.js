@@ -1,7 +1,7 @@
 const MAX_MESSAGES_READ_SUMMARY = 100;
 
 //The number of messages loaded into the message area in one read call
-const MAX_MESSAGES_READ = 100;
+const MAX_MESSAGES_READ = 10;
 
 
 angular.module('MesiboWeb', [])
@@ -54,6 +54,27 @@ angular.module('MesiboWeb', [])
 				updateScroll();
 			});
 		}
+
+		angular.element(document.getElementById('messages')).bind('scroll', function(e){
+                        MesiboLog("scrolling");
+                        $scope.checkScrollTop(e);
+                })
+
+                $scope.checkScrollTop = function(e) {
+                        const scroll = e.target.scrollTop;
+                        if($scope.msg_read_limit_reached)
+                                return;
+
+
+                        //MesiboLog("checkScrollTop", scroll);
+                        if(scroll == 0 && $scope.messageSession
+                                && $scope.messageSession.read){
+                                MesiboLog("Scrolled to top!");
+                                $scope.scrollMessages = e.target;
+                                $scope.messageSession.read(MAX_MESSAGES_READ);
+                        }
+                }
+
 
 
 		$scope.getMesibo = function(){
@@ -114,8 +135,7 @@ angular.module('MesiboWeb', [])
 			// MesiboLog("initMessageArea", user);
 			$scope.resetMessageSession();
 			$scope.selected_user = user; 
-			// $scope.sessionReadMessages(user, msg_count);
-
+			//$scope.sessionReadMessages(user, msg_count);
 
 		}
 
@@ -326,7 +346,6 @@ angular.module('MesiboWeb', [])
 		}
 
 		$scope.sessionReadSummary = function(){
-			return;
 			$scope.summarySession = $scope.mesibo.readDbSession(null, 0, null, 
 				function on_messages(m) {
 					MesiboLog("sessionReadSummary complete");
@@ -357,15 +376,22 @@ angular.module('MesiboWeb', [])
 			var peer = user.address;
 			var groupid = user.groupid;
 
-			MesiboLog("readMessages "+ peer+ " "+" groupid "+ groupid+ " "+ count);	
 
 			$scope.messageSession = null;	
 			
 			$scope.messageSession =  this.mesibo.readDbSession(peer, groupid, null, 
-				function on_messages(m) {
-					$scope.mesibo_user_messages = $scope.messageSession.getMessages();				
-					$scope.refresh();
-					$scope.scrollToLastMsg();
+				function on_read(result) {
+					MesiboLog("on_read", result);
+                                        // Read handler
+                                        // result will be equal to the number of messages read
+                                        MesiboLog("==> on_read messageSession", result);
+
+                                        $scope.refresh();
+                                        if($scope.scrollMessages){
+                                                $scope.scrollMessages.scrollTop = result*5;
+                                        }
+                                        else
+                                                $scope.scrollToLastMsg();
 
 			});
 
@@ -376,6 +402,8 @@ angular.module('MesiboWeb', [])
 			}
 
 			$scope.messageSession.enableReadReceipt(true);
+			MesiboLog("Calling Read!=========");
+			$scope.messageSession.readCount = count;
 			$scope.messageSession.read(count);			  		
 		}
 
@@ -824,25 +852,39 @@ angular.module('MesiboWeb', [])
 
 			$scope.call = new MesiboCall($scope);
 			$scope.file = new MesiboFile($scope);
-			$scope.readMessages();			
-		}
 
+			$scope.readMessages();
+		}
+		
 		$scope.readMessages = function(){
 			if($scope.messageSession)
-				$scope.messageSession.read(1000);
+				$scope.messageSession.read(MAX_MESSAGES_READ);
 			else
-				$scope.sessionReadMessages($scope.selected_user, 1000); 
+				$scope.sessionReadMessages($scope.selected_user, MAX_MESSAGES_READ); 
 		} 
 		
 		$scope.update_read_messages = function(m, rid){
-			$scope.mesibo_user_messages = [];
-			$scope.mesibo_user_messages = m;
-			$scope.$applyAsync(function()  {
-				$scope.scrollToLastMsg();				
-			});
-			MesiboLog("scope.update_read_messages", $scope.mesibo_user_messages);
-		}
+			$scope.messageSession.getMessages = function(){
+				return m;
+			}
 
+			$scope.$applyAsync(function()  {
+				if($scope.scrollMessages){
+					if($scope.mesibo_user_messages && 
+						$scope.mesibo_user_messages.length == m.length)
+						return;
+					$scope.scrollMessages.scrollTop = 50;
+				}
+				else
+					$scope.scrollToLastMsg();
+			
+			});
+
+			$scope.mesibo_user_messages = m;
+			MesiboLog("scope.update_read_messages", $scope.messageSession.getMessages());
+			$scope.refresh();
+		}
+		
 		$scope.initMesibo = function(demo_app_name){			
 			// Instead of directly accessing Mesibo APIs like so,
 			// $scope.mesibo = new Mesibo();

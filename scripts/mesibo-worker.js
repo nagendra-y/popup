@@ -55,7 +55,7 @@ MesiboWorker.prototype._init = function(s){
 	this.scope = s;
 
 
-	this.mesibo_read_sessions = [];
+	this.mesibo_read_sessions = {'length': 0}; 
 	this._createShared();
 
 	this.mesibo_call = {};
@@ -81,11 +81,38 @@ MesiboWorker.prototype._createShared = function(){
 	wCtx.mesibo_worker = worker; 		
 }
 
+MesiboWorker.prototype.syncMessages = function(readSession, count){
+	if(!(readSession && count && readSession.sync)){
+		MesiboLog("syncMessages", "Invalid Input", readSession, count);
+		return;
+	}
+	
+	MesiboLog("syncMessages called \n", readSession, count);
+	
+	if(this.msg_read_limit_reached)
+		return;
+
+
+	readSession.sync(count,
+		function on_sync(i){
+			MesiboLog("on_sync", i);
+			if(i>0){
+				MesiboLog("Attempting to read "+ i + " messages");
+				this.readCount = i;
+				let rCount = this.read(i);
+				MesiboLog("Read "+ rCount + " messages");
+				if(rCount)
+					this.msg_read_limit_reached = false;
+			}
+		});
+}
+
 MesiboWorker.prototype._mesibo_shared_process = function(o) {
 	var op = o.op;
 	var data = o.data;
-
+	var mWorker = this;
 	console.log('mesibo_shared_process', o);
+
 
 	switch(op){
 
@@ -112,17 +139,46 @@ MesiboWorker.prototype._mesibo_shared_process = function(o) {
 
 			MesiboLog("...readMessages...", o);
 			var wCtx = this.mesibo_worker;
+			var rSession = this.mesibo_read_sessions[o.rid];
+			MesiboLog("Existing read session", rSession);
+			if(rSession.isSet){
+				MesiboLog("Existing read session set", this.msg_read_limit_reached);
+					rSession.read(o.count);
+				return;
+			}
+
 			var mSession = this.mesibo_api.readDbSession(o.peer, o.groupid, o.ss, 
-				function on_messages(m) {
+				function on_read(result) {
+					MesiboLog("on_read", result);
+					// Read handler
+                                        // result will be equal to the number of messages read
+                                        MesiboLog("==> on_read messageSession", result);
+
+                                        if(result == undefined || result == null)
+                                                return;
+
+                                        if(this.readCount && result < this.readCount){
+                                                MesiboLog("Run out of messages to display. Syncing..", result, this.readCount);
+						mWorker.syncMessages(mSession, mSession.readCount - result);
+                                                mWorker.msg_read_limit_reached = true;
+                                        }
+
+
 					MesiboLog("readMessages result..", mSession.getMessages(), o);
 					wCtx.port.postMessage( 
 						{op:'readMessagesResult', data: o, messages:mSession.getMessages(), rid:o.rid});
 			});
+
 			if(o.read_receipt)
 				mSession.enableReadReceipt(true);
-			mSession.read(o.count);  //pass count								
+			
+			mSession.isSet = true;
+			this.mesibo_read_sessions[o.rid] = mSession;
+			mSession.readCount = o.count;
+			var r = mSession.read(o.count); 
+			MesiboLog("read returned", r);
 			break;
-		
+	
 		case "call":
 			// make call for this and other tab
 			if(this.mesibo_api){
@@ -188,6 +244,14 @@ MesiboWorker.prototype._mesibo_shared_process = function(o) {
 
 		case "readMessagesResult":
 			this.OnReadMessages(o.messages, o.data.rid);
+		
+		case "syncMessagesResult":
+			var rSession = this.mesibo_read_sessions[o.data.rid];
+			if(!(rSession && rSession.on_sync))
+				return;
+			
+			var count = o.data.count;
+			//rSession.read(count);
 		// TBD, implement others
 	}
 }
@@ -213,7 +277,7 @@ MesiboWorker.prototype._mesibo_init = function(){
 		this.mesibo_api.start();
 
 		// Read messages when a non-active tab becomes active
-		this.scope.readMessages();		 
+		//this.scope.readMessages();		 
 	}
 	catch(e){
 		console.log("Exception starting mesibo: ", e);
@@ -265,21 +329,25 @@ MesiboWorker.prototype.getInstance = function(){
 
 MesiboWorker.prototype.OnReadMessages = function(m, rid){
 	MesiboLog("===OnReadMessages===");
-	
 	this.scope.update_read_messages(m, rid);
-
+	
+	var rs = this.mesibo_read_sessions[rid];
+	if(!rs)
+		return;
+	//rs.on_read(m.length);
 }
 
-MesiboWorker.prototype.readDbSession = function(peer, groupid, ss, on_messages){
+MesiboWorker.prototype.readDbSession = function(peer, groupid, ss, on_read){
 	MesiboLog("Worker readDbSession", this.mesibo_api);
 
 	var read_session = {};
 	read_session.peer = peer;
-	read_session.rid = this.mesibo_read_sessions.length + 1;
+	this.mesibo_read_sessions.length++; 
+	read_session.rid = this.mesibo_read_sessions.length;
 	read_session.groupid = groupid;
 	read_session.ss = ss;
 	read_session.messages = [];
-	read_session.on_messages = on_messages;
+	read_session.on_read = on_read;
 
 	read_session.getMessages = function(){
 		MesiboLog("read_session", this);
@@ -299,9 +367,18 @@ MesiboWorker.prototype.readDbSession = function(peer, groupid, ss, on_messages){
 		 ss: r.ss, count: r.count, rid: this.rid, read_receipt: this.read_receipt};
 		wCtx.mesibo_worker.port.postMessage(post);
 	}
+	
+	read_session.sync = function(count, on_sync){
+		MesiboLog("MesiboWorker", "sync", this);
+		this.on_sync = on_sync;
+		var r = this;
+		var post = {op: "syncMessages", peer: r.peer, groupid: r.groupid,
+		 ss: r.ss, count: r.count, rid: this.rid};
+		wCtx.mesibo_worker.port.postMessage(post);
+	}
 
-	this.mesibo_read_sessions.push(read_session);	
-	return read_session; //**Fix**
+	this.mesibo_read_sessions[read_session.rid] = read_session;	
+	return read_session; 
 }
 
 MesiboWorker.prototype.setupVoiceCall = function(src){
