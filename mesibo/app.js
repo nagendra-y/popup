@@ -1,6 +1,6 @@
 //core.js
 
-/** Copyright (c) 2019 Mesibo
+/** Copyright (c) 2020 Mesibo
  * https://mesibo.com
  * All rights reserved.
  *
@@ -37,7 +37,7 @@
  * https://mesibo.com/documentation/
  *
  * Source Code Repository
- * https://github.com/mesibo/samples/js-beta
+ * https://github.com/mesibo/messenger-javascript
  *
  *
  */
@@ -108,7 +108,7 @@ MesiboApp.prototype.fetchContacts = async function(userToken, ts, phones) {
 		if(c.groupid!=0)
 			c.members = elem.members;
 
-		// var rv = this.api.setContact(c);
+		var rv = this.api.setContact(c);
 
 
 		available_contacts.push(c);

@@ -6,13 +6,13 @@
     <link rel="stylesheet" href="styles/popup.css" >
     <link rel="stylesheet" href="styles/popupdesign.css" >
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css" integrity="sha384-+d0P83n9kaQMCwj8F4RJB66tzIwOKmrdb46+porD/OvrJ+37WqIM7UoBtwHO6Nlg" crossorigin="anonymous">
+    
     <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.9/angular.min.js"></script>
     <link href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
     <script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="https://api.mesibo.com/mesibo3.js" crossorigin="anonymous"></script> 
+    <script type="text/javascript" src="https://api.mesibo.com/mesibo.js" crossorigin="anonymous"></script> 
     <script type="text/javascript" src="mesibo/config.js"></script>
-    <script type="text/javascript" src="scripts/mesibo-worker.js"></script>
     <script type="text/javascript" src="scripts/controller.js"></script>
     <script type="text/javascript" src="scripts/ui.js"></script>
     <script type="text/javascript" src="mesibo/utils.js"></script>		
@@ -20,6 +20,7 @@
     <script type="text/javascript" src="mesibo/calls.js"></script>
     <script type="text/javascript" src="mesibo/files.js"></script>
     <script type="text/javascript" src="mesibo/recorder.js"></script>
+  
   </head>
   <!------ Include the above in your HEAD tag ---------->
   <body ng-app="MesiboWeb" id="mesibowebapp" ng-controller="AppController" style="overflow: hidden;">
@@ -27,6 +28,7 @@
     <p style="padding-left: 5px">Before using this demo, you need to create a user token and edit <strong>config.js</strong></p>
     <p style="padding-left: 5px">Set the token and other required parameters such as the destination address, displayed user name and picture.</p>
     <p style="padding-left: 5px">Refer to the <strong>README</strong> file. Click on the floating circle in the bottom-right corner to launch the popup window. </p>
+   
     <div class="container">
       <div class="row">
         <div id="Smallchat">
@@ -56,7 +58,7 @@
               <div class="Messenger_content" style="overflow: hidden;">
                 <div class="Messages" id="messages">
                   <div class="Messages_list" >
-                    <div ng-repeat="m in mesibo_user_messages" ng-class="{'outgoing_msg':isSent(m),'incoming_msg':isReceived(m)}">
+                    <div ng-repeat="m in messageSession.getMessages()" ng-show="isFileMsg(m) || m.message" ng-class="{'outgoing_msg':isSent(m),'incoming_msg':isReceived(m)}">
                       <div ng-class="{'sent_msg':isSent(m), 'received_msg':isReceived(m)}">
                         <a ng-show = "isFileMsg(m)" ng-href="{{isFileMsg(m)? m.fileurl:''}}" target="_blank" style="max-width: 200px;" >
                           <div ng-show='isImageMsg(m)' class= "image-holder"><img ng-src= "{{m.fileurl}}" style="cursor:pointer;" />
@@ -71,19 +73,28 @@
                           </div>
                         </a>
                         <div style="max-width: 200px;overflow-wrap: break-word;">
-                          {{m.message}}        
-                        </div>
-                        <div class="time ml-auto small text-left flex-shrink-0 align-self-end text-muted" style="font-size: 10px;"ng-style="{'float': isSent(m) ? 'right':'left'}" >{{m.date.time}}
+				{{m.text}}
+			</div>
+                        
+			<div style="overflow-wrap: break-word; text-align: center" ng-repeat="o in m.options">
+				<button type="button" style="margin-bottom: 5px; width: 100%; border-color: #ffffff !important" ng-click="processOption(o)" ng-style="{'background-color': o.color}" class="btn btn-primary">{{o.text}}</button>
+			</div>
+                       	 
+			<div class="time ml-auto small text-left flex-shrink-0 align-self-end text-muted" style="font-size: 10px;"ng-style="{'float': isSent(m) ? 'right':'left'}" >{{m.date.time}}
                           <i ng-class= "getMessageStatusClass(m)" ng-style = "{'color':getMessageStatusColor(m)}"></i>
                         </div>
                       </div>
                     </div>
                   </div>
                   <!-- Anchor to Scroll -->
-                  <div id="messages_end">&nbsp;</div>
-                </div>
+                  <div id="messages_end" style="margin-top: 100px;">&nbsp;</div>
+		  <div class="message-options" style="text-align: center; position: fixed; bottom: 70px;">
+			  <button ng-repeat="o in quick_replies" ng-click="processOption(o)" type="button" class="btn btn-primary" ng-style="{'background-color': o.color}" style="border-color: #ffffff !important">{{getIcon(o) + o.text}}
+		  </div>
+
+		</div>
                 <div class="Input Input-blank">
-                  <textarea  autofocus ng-model="input_message_text" ng-keydown="$event.keyCode === 13 && sendMessage() && onKeydown($event)" class="Input_field" placeholder="Send a message..." style="height: 20px;resize: none; overflow: hidden;" id='inputfield'></textarea>
+                  <textarea autofocus ng-model="input_message_text" ng-keydown="$event.keyCode === 13 && sendMessage() && onKeydown($event)" class="Input_field" placeholder="Send a message..." style="height: 20px;resize: none; overflow: hidden;" id='inputfield'></textarea>
                   <button class="Input_button Input_button-emoji">
                     <div class="Icon" style="width: 18px; height: 18px;">
                       <input id="upload" type="file" onchange="angular.element(this).scope().onFileSelect(this)" style="padding-left: : 5px; display: none;">

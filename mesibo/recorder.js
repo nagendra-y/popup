@@ -36,6 +36,9 @@
  * Documentation
  * https://mesibo.com/documentation/
  *
+ * Source Code Repository
+ * https://github.com/mesibo/messenger-javascript
+ *
  * Recorder can be used to capture and send live media(captured from WebCam etc)
  * Example: Audio Clip, Video Clip, Picture, etc
  *
