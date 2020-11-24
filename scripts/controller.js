@@ -522,7 +522,6 @@ angular.module('MesiboWeb', [])
 				messageParams.im = messageParams.message;
 				messageParams.message = textValue;
 			}
-                        //$scope.mesibo_user_messages.push(messageParams);
                         $scope.refresh();
                         $scope.scrollToLastMsg();
                         return 0;
@@ -543,6 +542,8 @@ angular.module('MesiboWeb', [])
 			MesiboLog("$scope.prototype.OnMessage", m, data);
                         if(!m.id || m.presence)
                                 return;
+			if(m.message)
+				m.text = m.message
 			
 			if(MESSAGE_TYPE_JSON == m.type){
 				var json = {};	
@@ -579,6 +580,7 @@ angular.module('MesiboWeb', [])
 				}
 				
 				if(json.text){
+					MesiboLog("Set text", m.text);
 					m.text = json.text;
 				}
 
@@ -586,45 +588,9 @@ angular.module('MesiboWeb', [])
 					$scope.quick_replies = [];	
 				}
 			}
-                        $scope.mesibo_user_messages.push(m);
+                        if(MESIBO_FLAG_TRANSIENT == m.flag)
+				$scope.mesibo_user_messages.push(m);
 			
-			// If you get a message from a new contact, the name will be ""
-			// So, you need to add it as a contact and synchronize with backend
-			// var user = m.user;
-			// if(isValid(user) && isContactSync){
-			//     var uname = user.name;
-			//     if("" == uname){
-			//         if(!isGroup(user))
-			//             $scope.app.fetchContacts(MESIBO_ACCESS_TOKEN, 0, [m.address]);
-			//     }
-
-			// }
-
-			//Update profile details
-			if (1 == m.type) {
-				if(m.message == "")
-					return -1;
-
-				var updated_user = JSON.parse(m.message);
-				if(!isValid(data))
-					return -1;
-				MesiboLog("Update contact", updated_user);
-				var c = {};
-				c.address = updated_user.phone;
-				c.groupid = parseInt(updated_user.gid);
-				c.picture = updated_user.photo;
-				c.name = updated_user.name;
-				c.status = updated_user.status;
-				c.ts = parseInt(updated_user.ts);
-
-				MesiboLog("Update contact", c);
-				var rv = $scope.mesibo.setContact(c);
-				$scope.refresh();
-
-				return 0;
-			}
-
-
 
 			$scope.refresh();
 			$scope.scrollToLastMsg();
