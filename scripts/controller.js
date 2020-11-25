@@ -545,6 +545,8 @@ angular.module('MesiboWeb', [])
 			if(m.message)
 				m.text = m.message
 			
+			$scope.quick_replies = [];
+
 			if(MESSAGE_TYPE_JSON == m.type){
 				var json = {};	
 				try{

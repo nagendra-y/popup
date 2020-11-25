@@ -394,7 +394,7 @@
 }
 
 div.message-options {
-  overflow: wrap; 
+	width: 90%;
 }
 
 div.message-options button{
