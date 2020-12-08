@@ -72,8 +72,7 @@
                           <div ng-show='isOtherMsg(m)' class= "image-holder"><img ng-src= "images/file/default_file_icon.jpg" style="cursor:pointer;" />
                           </div>
                         </a>
-                        <div style="max-width: 200px;overflow-wrap: break-word;">
-				{{m.text}}
+                        <div style="max-width: 200px;overflow-wrap: break-word; white-space: pre-line">{{m.text}}
 			</div>
                         
 			<div style="overflow-wrap: break-word; text-align: center" ng-repeat="o in m.options">
